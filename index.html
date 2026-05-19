@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Diamond Dent | Inventory OS</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+  <style>
+    /* [All existing styles remain exactly the same – unchanged] */
+    :root {
+      --bg: #050505;
+      --card: rgba(255, 255, 255, 0.03);
+      --accent: #00f2ff;
+      --accent-glow: rgba(0, 242, 255, 0.4);
+      --text: #ffffff;
+      --muted: #666666;
+      --border: rgba(255, 255, 255, 0.08);
+      --success: #00ff88;
+      --warning: #ffcc00;
+      --error: #ff4444;
+      --danger: #ff3366;
+      --danger-glow: rgba(255, 51, 102, 0.4);
+    }
+
+    * { 
+      box-sizing: border-box; 
+      -webkit-font-smoothing: antialiased; 
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      margin: 0; 
+      background: var(--bg); 
+      color: var(--text);
+      min-height: 100vh; 
+      overflow-x: hidden;
+      padding-bottom: 100px;
+    }
+
+    .bg-mesh {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: -2;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(0, 242, 255, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(58, 123, 213, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(0, 242, 255, 0.05) 0%, transparent 30%);
+      animation: meshMove 20s ease-in-out infinite;
+    }
+
+    @keyframes meshMove {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -30px) scale(1.1); }
+      66% { transform: translate(-20px, 20px) scale(0.9); }
+    }
+
+    .grid-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background-image: 
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .container { 
+      max-width: 500px; 
+      margin: 0 auto; 
+      padding: 25px; 
+    }
+
+    .app-header { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 40px;
+      animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand { 
+      font-weight: 700; 
+      font-size: 20px; 
+      letter-spacing: 3px;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+    }
+
+    .brand::after {
+      content: '';
+      position: absolute;
+      bottom: -5px; left: 0;
+      width: 100%; height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      transform: scaleX(0);
+      transform-origin: left;
+      animation: expandLine 1s ease-out 0.5s forwards;
+    }
+
+    @keyframes expandLine {
+      to { transform: scaleX(1); }
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .status-dot {
+      width: 8px; height: 8px; 
+      border-radius: 50%; 
+      background: var(--success);
+      box-shadow: 0 0 15px var(--success);
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .status-dot::before {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1px solid var(--success);
+      opacity: 0;
+      animation: ripple 2s infinite;
+    }
+
+    @keyframes ripple {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
+    }
+
+    .glass-panel {
+      background: var(--card); 
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border); 
+      border-radius: 24px;
+      padding: 30px; 
+      box-shadow: 
+        0 25px 50px rgba(0,0,0,0.5),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .glass-panel:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 30px 60px rgba(0,0,0,0.6),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .input-wrap { 
+      margin-bottom: 28px; 
+      position: relative;
+    }
+
+    .input-wrap label { 
+      font-size: 10px; 
+      font-weight: 700; 
+      color: var(--accent); 
+      text-transform: uppercase; 
+      letter-spacing: 2px; 
+      margin-bottom: 10px; 
+      display: block;
+      transform: translateY(0);
+      transition: all 0.3s ease;
+    }
+
+    .input-wrap:focus-within label {
+      color: #fff;
+      text-shadow: 0 0 10px var(--accent-glow);
+    }
+    
+    .input-with-button {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .input-with-button input {
+      flex: 1;
+      background: rgba(255,255,255,0.02); 
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px; 
+      font-size: 16px; 
+      color: #fff; 
+      transition: all 0.3s ease; 
+      font-family: inherit;
+    }
+    
+    .scan-camera-btn {
+      background: rgba(0, 242, 255, 0.15);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    
+    .scan-camera-btn:hover {
+      background: rgba(0, 242, 255, 0.3);
+      transform: scale(1.02);
+    }
+    
+    .scan-camera-btn svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--accent);
+      stroke-width: 1.8;
+      fill: none;
+    }
+
+    input {
+      width: 100%; 
+      background: rgba(255,255,255,0.02); 
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px; 
+      font-size: 16px; 
+      color: #fff; 
+      transition: all 0.3s ease; 
+      font-family: inherit;
+    }
+
+    input:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    input:focus { 
+      border-color: var(--accent); 
+      background: rgba(0, 242, 255, 0.05);
+      outline: none;
+      box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
+    }
+
+    input::placeholder {
+      color: var(--muted);
+      transition: all 0.3s ease;
+    }
+
+    input:focus::placeholder {
+      opacity: 0.5;
+      transform: translateX(10px);
+    }
+
+    .btn-action {
+      width: 100%; 
+      padding: 18px; 
+      border-radius: 16px; 
+      border: none;
+      background: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
+      color: white; 
+      font-weight: 700; 
+      font-size: 16px; 
+      cursor: pointer;
+      box-shadow: 
+        0 10px 30px rgba(58, 123, 213, 0.4),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-action::before {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 
+        0 15px 40px rgba(58, 123, 213, 0.5),
+        inset 0 1px 0 rgba(255,255,255,0.3);
+    }
+
+    .btn-action:hover::before {
+      left: 100%;
+    }
+
+    .btn-action:active { 
+      transform: scale(0.98) translateY(0); 
+    }
+
+    .btn-action.success {
+      background: linear-gradient(135deg, var(--success) 0%, #00cc6a 100%);
+      animation: successPulse 0.5s ease;
+    }
+
+    @keyframes successPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .clear-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--danger);
+      background: rgba(255, 51, 102, 0.1);
+      color: var(--danger);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .clear-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--danger);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+      z-index: -1;
+    }
+
+    .clear-btn:hover {
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px var(--danger-glow);
+      border-color: transparent;
+    }
+
+    .clear-btn:hover::before {
+      transform: scaleX(1);
+    }
+
+    .clear-btn:active {
+      transform: scale(0.98);
+    }
+
+    .clear-btn svg {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.3s ease;
+    }
+
+    .clear-btn:hover svg {
+      transform: rotate(90deg);
+    }
+
+    .clear-btn.confirming {
+      background: var(--danger);
+      color: #fff;
+      animation: pulseDanger 1s infinite;
+    }
+
+    @keyframes pulseDanger {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.4); }
+      50% { box-shadow: 0 0 20px 5px rgba(255, 51, 102, 0.2); }
+    }
+
+    .table-container { 
+      overflow-x: auto; 
+      width: 100%;
+      border-radius: 16px;
+    }
+
+    table {
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 5px;
+      color: var(--text); 
+      font-size: 13px; 
+      min-width: 350px;
+    }
+
+    th {
+      text-align: left; 
+      color: var(--accent); 
+      font-size: 9px;
+      text-transform: uppercase; 
+      letter-spacing: 1.5px;
+      padding: 16px 12px; 
+      border-bottom: 2px solid var(--border);
+      font-weight: 700;
+    }
+
+    td {
+      padding: 16px 12px; 
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      white-space: nowrap;
+      transition: all 0.3s ease;
+    }
+
+    tr {
+      animation: fadeInRow 0.4s ease backwards;
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.03);
+      color: #fff;
+    }
+
+    tr.clearing {
+      animation: clearOut 0.4s ease forwards;
+    }
+
+    @keyframes clearOut {
+      to {
+        opacity: 0;
+        transform: translateX(-100%);
+      }
+    }
+
+    @keyframes fadeInRow {
+      from { 
+        opacity: 0; 
+        transform: translateX(-20px);
+      }
+      to { 
+        opacity: 1; 
+        transform: translateX(0);
+      }
+    }
+
+    .col-id { 
+      font-weight: 500; 
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .col-loc { 
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .col-qty { 
+      font-weight: 700; 
+      color: var(--accent);
+      text-align: center;
+      font-size: 14px;
+      text-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    .col-time { 
+      font-size: 11px; 
+      color: var(--muted);
+      font-family: 'Courier New', monospace;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 48px; height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.3;
+      stroke: var(--accent);
+    }
+
+    .dock-container { 
+      position: fixed; 
+      bottom: 30px; 
+      width: 100%; 
+      display: flex; 
+      justify-content: center; 
+      z-index: 100;
+      animation: slideUpDock 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.3s backwards;
+    }
+
+    @keyframes slideUpDock {
+      from { opacity: 0; transform: translateY(100px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dock {
+      background: rgba(255, 255, 255, 0.05); 
+      backdrop-filter: blur(25px);
+      padding: 6px; 
+      border-radius: 20px; 
+      border: 1px solid var(--border);
+      display: flex; 
+      gap: 8px;
+      box-shadow: 
+        0 20px 40px rgba(0,0,0,0.4),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .dock-btn {
+      padding: 12px 24px; 
+      border-radius: 16px; 
+      border: none; 
+      background: transparent;
+      color: var(--muted); 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dock-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      border-radius: 16px;
+      transform: scale(0);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: -1;
+    }
+
+    .dock-btn.active { 
+      color: #000;
+      transform: scale(1.05);
+    }
+
+    .dock-btn.active::before {
+      transform: scale(1);
+    }
+
+    .dock-btn:not(.active):hover {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+
+    .view {
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { 
+      display: none; 
+    }
+
+    .scanner-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      visibility: hidden;
+      opacity: 0;
+      transition: visibility 0.2s, opacity 0.2s;
+    }
+    .scanner-modal.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .scanner-container {
+      background: #000;
+      border-radius: 32px;
+      width: 90%;
+      max-width: 450px;
+      overflow: hidden;
+      border: 1px solid var(--accent);
+      box-shadow: 0 0 40px rgba(0,242,255,0.2);
+      position: relative;
+    }
+    .scanner-viewport {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #111;
+      position: relative;
+    }
+    #scanner-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .scanner-close {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      background: rgba(0,0,0,0.7);
+      border-radius: 30px;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: white;
+      border: 1px solid var(--danger);
+      cursor: pointer;
+      z-index: 10;
+      font-weight: bold;
+    }
+    .scanner-header {
+      padding: 12px;
+      text-align: center;
+      color: var(--accent);
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .toast {
+      position: fixed;
+      top: 25px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(0,0,0,0.9);
+      border: 1px solid var(--border);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 13px;
+      color: #fff;
+      z-index: 1000;
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(10px);
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    .toast.success { border-color: var(--success); color: var(--success); }
+    .toast.error { border-color: var(--error); color: var(--error); }
+    .toast.warning { border-color: var(--warning); color: var(--warning); }
+
+    .stats-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 242, 255, 0.1);
+      border: 1px solid rgba(0, 242, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      color: var(--accent);
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    @media (max-width: 480px) {
+      .container { padding: 20px; }
+      .glass-panel { padding: 24px; }
+      .dock-btn { padding: 10px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div class="grid-overlay"></div>
+  <div class="toast" id="toast"></div>
+  <div id="scanner-modal" class="scanner-modal">
+    <div class="scanner-container">
+      <div class="scanner-header">📷 Position barcode in frame</div>
+      <div class="scanner-viewport">
+        <video id="scanner-video" autoplay muted playsinline></video>
+      </div>
+      <button class="scanner-close" id="close-scanner">Cancel</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <header class="app-header">
+      <div class="brand">DIAMOND STORE</div>
+      <div class="status-indicator">
+        <span id="status-text">Local Storage</span>
+        <div class="status-dot" id="sync-dot"></div>
+      </div>
+    </header>
+
+    <div id="view-scan" class="view">
+      <div class="glass-panel">
+        <div class="stats-badge">
+          <span>●</span>
+          <span id="entry-count">Ready to scan</span>
+        </div>
+        
+        <div class="input-wrap">
+          <label>Location</label>
+          <div style="position: relative;">
+            <input type="text" id="loc" placeholder="Bin/Rack" autocomplete="off">
+            <div class="scan-line"></div>
+          </div>
+        </div>
+        
+        <div class="input-wrap">
+          <label>Item ID (Scan)</label>
+          <div class="input-with-button">
+            <input type="text" id="asset" placeholder="Ready for barcode..." autocomplete="off">
+            <button type="button" class="scan-camera-btn" id="scan-camera-trigger">
+              <svg viewBox="0 0 24 24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </button>
+          </div>
+          <div class="scan-line"></div>
+        </div>
+        
+        <div class="input-wrap">
+          <label>Quantity</label>
+          <div style="position: relative;">
+            <input type="number" id="qty" placeholder="1" inputmode="numeric">
+            <div class="scan-line"></div>
+          </div>
+        </div>
+        
+        <button class="btn-action" id="submit-btn">Upload Entry</button>
+      </div>
+    </div>
+
+    <div id="view-history" class="view hidden">
+      <div class="glass-panel">
+        <div class="stats-badge">
+          <span>◈</span>
+          <span id="log-count">0 entries</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr><th>Item ID</th><th>Location</th><th>Time</th><th style="text-align: center;">Qty</th></tr>
+            </thead>
+            <tbody id="history-body">
+              <tr class="empty-row"><td colspan="4"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><div>No entries yet</div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="clear-btn" id="clear-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg><span id="clear-text">Clear All Logs</span></button>
+      </div>
+    </div>
+  </div>
+  <div class="dock-container"><div class="dock"><button class="dock-btn active" id="btn-scan">ENTRY</button><button class="dock-btn" id="btn-hist">LOGS</button></div></div>
+
+  <script>
+    // ---------- OFFLINE INVENTORY APP (NO GOOGLE SCRIPT) WITH CAMERA SCANNING ----------
+    let entries = JSON.parse(localStorage.getItem('diamond_entries') || '[]');
+    let clearConfirmTimeout = null;
+    let quaggaInitialized = false;
+
+    const assetIn = document.getElementById('asset');
+    const qtyIn = document.getElementById('qty');
+    const locIn = document.getElementById('loc');
+    const submitBtn = document.getElementById('submit-btn');
+    const toastEl = document.getElementById('toast');
+    const entryCountSpan = document.getElementById('entry-count');
+    const logCountSpan = document.getElementById('log-count');
+    const clearBtn = document.getElementById('clear-btn');
+    const clearText = document.getElementById('clear-text');
+    const scanTrigger = document.getElementById('scan-camera-trigger');
+    const scannerModal = document.getElementById('scanner-modal');
+    const closeScannerBtn = document.getElementById('close-scanner');
+    const videoEl = document.getElementById('scanner-video');
+
+    function showToast(message, type = 'success') {
+      toastEl.textContent = message;
+      toastEl.className = `toast ${type} show`;
+      setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
+
+    function saveEntries() {
+      localStorage.setItem('diamond_entries', JSON.stringify(entries));
+      updateEntryCount();
+      renderHistory();
+    }
+
+    function updateEntryCount() {
+      let totalQty = entries.reduce((sum, e) => sum + (Number(e.quantity) || 0), 0);
+      entryCountSpan.innerText = `${entries.length} items (Σ ${totalQty})`;
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById('history-body');
+      if (!entries.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="4"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><div>No entries yet</div></div></td></tr>`;
+        logCountSpan.innerText = `0 entries`;
+        return;
+      }
+      let rows = '';
+      entries.slice().reverse().forEach(entry => {
+        rows += `<tr><td class="col-id">${escapeHtml(entry.asset)}</td><td class="col-loc">${escapeHtml(entry.location)}</td><td class="col-time">${entry.timestamp}</td><td class="col-qty" style="text-align:center;">${entry.quantity}</td></tr>`;
+      });
+      tbody.innerHTML = rows;
+      logCountSpan.innerText = `${entries.length} entries`;
+    }
+    function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+    window.pushData = function() {
+      const location = locIn.value.trim();
+      const asset = assetIn.value.trim();
+      let quantity = parseInt(qtyIn.value.trim(), 10);
+      if (isNaN(quantity) || quantity <= 0) quantity = 1;
+
+      if (!asset) { showToast('Item ID required', 'error'); assetIn.focus(); return; }
+      if (!location) { showToast('Location required', 'error'); locIn.focus(); return; }
+
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+      const newEntry = { location, asset, quantity, timestamp, synced: true };
+      entries.push(newEntry);
+      saveEntries();
+      showToast(`✅ Saved: ${asset} x${quantity}`, 'success');
+      assetIn.value = '';
+      qtyIn.value = '';
+      assetIn.focus();
+      localStorage.setItem('turbo_loc', location);
+    };
+
+    // ----- FIXED CAMERA HANDLING -----
+    function stopScannerAndClose() {
+      if (quaggaInitialized) {
+        try { Quagga.stop(); } catch(e) {}
+        quaggaInitialized = false;
+      }
+      if (videoEl.srcObject) {
+        let tracks = videoEl.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        videoEl.srcObject = null;
+      }
+      scannerModal.classList.remove('active');
+    }
+
+    function initScanner() {
+      // Reset any previous instance
+      if (quaggaInitialized) {
+        try { Quagga.stop(); } catch(e) {}
+        quaggaInitialized = false;
+      }
+      if (videoEl.srcObject) {
+        let tracks = videoEl.srcObject.getTracks();
+        tracks.forEach(track => track.stop());
+        videoEl.srcObject = null;
+      }
+
+      // Check browser support
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast("Camera not supported on this device/browser", "error");
+        stopScannerAndClose();
+        return;
+      }
+
+      Quagga.init({
+        inputStream: {
+          name: "Live",
+          type: "LiveStream",
+          target: videoEl,
+          constraints: { facingMode: "environment", width: { ideal: 640 } }
+        },
+        decoder: { readers: ["code_128_reader", "ean_reader", "ean_8_reader", "upc_reader", "code_39_reader"] }
+      }, function(err) {
+        if (err) {
+          console.error("Quagga init error:", err);
+          let errorMsg = "Camera error: ";
+          if (err.name === "NotAllowedError" || err.message.includes("Permission")) {
+            errorMsg = "Camera permission denied. Please allow camera access.";
+          } else if (err.name === "NotFoundError") {
+            errorMsg = "No camera found on this device.";
+          } else {
+            errorMsg += err.message || "Failed to start scanner.";
+          }
+          showToast(errorMsg, "error");
+          stopScannerAndClose();
+          return;
+        }
+        Quagga.start();
+        quaggaInitialized = true;
+      });
+
+      Quagga.onDetected(function(result) {
+        if (result && result.codeResult && result.codeResult.code) {
+          const scannedCode = result.codeResult.code;
+          assetIn.value = scannedCode;
+          showToast(`Scanned: ${scannedCode}`, 'success');
+          stopScannerAndClose();
+          setTimeout(() => qtyIn.focus(), 200);
+        }
+      });
+    }
+
+    function openScanner() {
+      scannerModal.classList.add('active');
+      // Short delay to allow modal to become visible before initializing camera
+      setTimeout(() => { initScanner(); }, 100);
+    }
+
+    scanTrigger.addEventListener('click', openScanner);
+    closeScannerBtn.addEventListener('click', stopScannerAndClose);
+
+    // If user clicks outside the modal content, also close (optional)
+    scannerModal.addEventListener('click', (e) => {
+      if (e.target === scannerModal) stopScannerAndClose();
+    });
+
+    // Clear logs double-confirm
+    window.handleClearClick = function() {
+      if (clearBtn.classList.contains('confirming')) {
+        if (clearConfirmTimeout) clearTimeout(clearConfirmTimeout);
+        entries = [];
+        saveEntries();
+        renderHistory();
+        showToast('All logs cleared', 'warning');
+        clearBtn.classList.remove('confirming');
+        clearText.innerText = 'Clear All Logs';
+      } else {
+        clearBtn.classList.add('confirming');
+        clearText.innerText = 'Confirm Clear?';
+        if (clearConfirmTimeout) clearTimeout(clearConfirmTimeout);
+        clearConfirmTimeout = setTimeout(() => {
+          clearBtn.classList.remove('confirming');
+          clearText.innerText = 'Clear All Logs';
+        }, 3000);
+      }
+    };
+    clearBtn.onclick = handleClearClick;
+
+    window.switchTab = function(tab) {
+      const scanView = document.getElementById('view-scan');
+      const histView = document.getElementById('view-history');
+      const scanBtn = document.getElementById('btn-scan');
+      const histBtn = document.getElementById('btn-hist');
+      if (tab === 'scan') {
+        scanView.classList.remove('hidden');
+        histView.classList.add('hidden');
+        scanBtn.classList.add('active');
+        histBtn.classList.remove('active');
+        assetIn.focus();
+      } else {
+        scanView.classList.add('hidden');
+        histView.classList.remove('hidden');
+        scanBtn.classList.remove('active');
+        histBtn.classList.add('active');
+        renderHistory();
+      }
+    };
+
+    assetIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); if(assetIn.value.trim()) qtyIn.focus(); } });
+    qtyIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); pushData(); } });
+    submitBtn.addEventListener('click', () => pushData());
+
+    locIn.value = localStorage.getItem('turbo_loc') || "";
+    updateEntryCount();
+    renderHistory();
+    assetIn.focus();
+    document.getElementById('status-text').innerText = 'Local';
+  </script>
+</body>
+</html>
