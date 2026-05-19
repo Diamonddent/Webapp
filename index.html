@@ -2,367 +2,771 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ScanStock — Inventory</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Vaultory — Inventory</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Syne:wght@400;700;800&display=swap');
+:root {
+  --cream: #faf8f4;
+  --warm-white: #ffffff;
+  --parchment: #f2ede4;
+  --sand: #e8dfd0;
+  --muted: #c8bfb0;
+  --stone: #9a9086;
+  --slate: #5c5650;
+  --ink: #2a2520;
+  --gold: #b8956a;
+  --gold-light: #d4b896;
+  --gold-dark: #8a6840;
+  --rose: #c4756a;
+  --sage: #7a9080;
+  --shadow-sm: 0 1px 4px rgba(42,37,32,0.06), 0 2px 12px rgba(42,37,32,0.04);
+  --shadow-md: 0 4px 20px rgba(42,37,32,0.08), 0 1px 4px rgba(42,37,32,0.05);
+  --shadow-lg: 0 12px 48px rgba(42,37,32,0.12), 0 4px 16px rgba(42,37,32,0.06);
+  --radius: 18px;
+  --radius-sm: 10px;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --sans: 'DM Sans', sans-serif;
+  --transition: cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-  :root {
-    --bg: #0d0f14;
-    --surface: #151820;
-    --surface2: #1c2030;
-    --border: #2a2f3f;
-    --accent: #00e5a0;
-    --accent2: #005c41;
-    --warn: #ff6b35;
-    --text: #e8eaf0;
-    --text-dim: #6b7290;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'Syne', sans-serif;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
 
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+/* Subtle noise texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
 
-  .app { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; padding: 0 16px 80px; }
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 0 20px env(safe-area-inset-bottom, 24px);
+  padding-bottom: 100px;
+}
 
-  header {
-    padding: 24px 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .logo { font-weight: 800; font-size: 1.4rem; letter-spacing: -0.02em; color: var(--accent); }
-  .logo span { color: var(--text-dim); font-weight: 400; }
+/* ── Header ── */
+header {
+  padding: 52px 0 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  animation: fadeDown 0.6s var(--transition) both;
+}
 
-  .tabs {
-    display: flex;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 4px;
-    gap: 4px;
-    margin-bottom: 24px;
-  }
-  .tab-btn {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    background: transparent;
-    color: var(--text-dim);
-    font-family: var(--sans);
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .tab-btn.active { background: var(--accent); color: #000; }
+.brand { line-height: 1; }
+.brand-name {
+  font-family: var(--serif);
+  font-size: 2.1rem;
+  font-weight: 300;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+  display: block;
+  line-height: 1;
+}
+.brand-name em {
+  font-style: italic;
+  color: var(--gold);
+}
+.brand-sub {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--stone);
+  display: block;
+  margin-top: 5px;
+}
 
-  .page { display: none; }
-  .page.active { display: block; }
+.header-right {
+  text-align: right;
+}
+#clock {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-weight: 300;
+  color: var(--slate);
+  letter-spacing: 0.05em;
+}
+#date-display {
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
 
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-  }
-  .card-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    margin-bottom: 16px;
-    font-family: var(--mono);
-  }
+/* ── Divider ── */
+.header-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--sand) 30%, var(--gold-light) 50%, var(--sand) 70%, transparent);
+  margin-bottom: 28px;
+  animation: fadeIn 0.8s var(--transition) 0.2s both;
+}
 
-  #qr-reader { width: 100%; border-radius: 12px; overflow: hidden; background: #000; }
-  #qr-reader video { border-radius: 12px; }
-  #qr-reader img { display: none !important; }
+/* ── Tabs ── */
+.tabs {
+  display: flex;
+  background: var(--warm-white);
+  border: 1px solid var(--sand);
+  border-radius: 50px;
+  padding: 5px;
+  gap: 4px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp 0.5s var(--transition) 0.15s both;
+}
 
-  .scan-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent2);
-    border: 1px solid var(--accent);
-    color: var(--accent);
-    font-family: var(--mono);
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-  .scan-btn:hover { background: var(--accent); color: #000; }
-  .scan-btn.scanning { background: var(--warn); border-color: var(--warn); color: #fff; }
+.tab-btn {
+  flex: 1;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  color: var(--stone);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.tab-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.tab-btn.active {
+  background: var(--ink);
+  color: var(--cream);
+  box-shadow: 0 2px 12px rgba(42,37,32,0.2);
+}
 
-  .field { margin-bottom: 14px; }
-  label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    font-family: var(--mono);
-    margin-bottom: 6px;
-  }
-  input[type="text"], input[type="number"] {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-family: var(--mono);
-    font-size: 1rem;
-    padding: 12px 14px;
-    border-radius: 10px;
-    outline: none;
-    transition: border-color 0.2s;
-    -webkit-appearance: none;
-  }
-  input:focus { border-color: var(--accent); }
-  input.filled { border-color: var(--accent2); color: var(--accent); }
+/* ── Pages ── */
+.page { display: none; }
+.page.active { display: block; animation: fadeUp 0.4s var(--transition) both; }
 
-  .scanned-code {
-    background: var(--surface2);
-    border: 1px solid var(--accent2);
-    border-radius: 10px;
-    padding: 12px 14px;
-    font-family: var(--mono);
-    font-size: 1rem;
-    color: var(--accent);
-    letter-spacing: 0.05em;
-    min-height: 46px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    word-break: break-all;
-  }
-  .scanned-code .placeholder { color: var(--text-dim); font-size: 0.85rem; }
-  .pulse-dot {
-    width: 8px; height: 8px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: pulse 1.2s infinite;
-    flex-shrink: 0;
-  }
-  @keyframes pulse {
-    0%,100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
+/* ── Card ── */
+.card {
+  background: var(--warm-white);
+  border: 1px solid var(--sand);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.3s var(--transition);
+}
+.card:hover { box-shadow: var(--shadow-md); }
 
-  .save-btn {
-    width: 100%;
-    padding: 16px;
-    background: var(--accent);
-    border: none;
-    color: #000;
-    font-family: var(--sans);
-    font-size: 1rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: 8px;
-  }
-  .save-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,229,160,0.3); }
-  .save-btn:active { transform: translateY(0); }
+.card-eyebrow {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 1px;
+  background: var(--gold-light);
+}
 
-  .toast {
-    position: fixed;
-    bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--accent);
-    color: #000;
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 10px 20px;
-    border-radius: 8px;
-    opacity: 0;
-    transition: all 0.3s;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 100;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.card-title {
+  font-family: var(--serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--ink);
+  margin-bottom: 20px;
+  letter-spacing: 0.01em;
+}
 
-  .log-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
-  .log-count { font-family: var(--mono); font-size: 0.75rem; color: var(--text-dim); }
-  .clear-btn {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--warn);
-    background: none;
-    border: 1px solid var(--warn);
-    padding: 5px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-  }
-  .clear-btn:hover { opacity: 1; }
+/* ── Scanner ── */
+#qr-reader {
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--ink);
+  margin-bottom: 14px;
+  position: relative;
+}
+#qr-reader video { border-radius: var(--radius-sm); display: block; width: 100%; }
+#qr-reader img { display: none !important; }
 
-  .log-empty {
-    text-align: center;
-    padding: 48px 20px;
-    color: var(--text-dim);
-    font-family: var(--mono);
-    font-size: 0.85rem;
-    line-height: 1.8;
-  }
+/* Scanner frame overlay */
+.scanner-frame {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 180px; height: 180px;
+  pointer-events: none;
+  z-index: 10;
+  display: none;
+}
+.scanner-frame.active { display: block; }
+.scanner-frame::before, .scanner-frame::after,
+.scanner-corner-bl, .scanner-corner-br {
+  content: '';
+  position: absolute;
+  width: 28px; height: 28px;
+  border-color: var(--gold);
+  border-style: solid;
+}
+.scanner-frame::before { top: 0; left: 0; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
+.scanner-frame::after  { top: 0; right: 0; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
+.scanner-corner-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
+.scanner-corner-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
 
-  .log-table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.78rem; }
-  thead th {
-    text-align: left;
-    padding: 8px 10px;
-    color: var(--text-dim);
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
-  tbody tr:hover { background: var(--surface2); }
-  tbody td { padding: 10px 10px; vertical-align: middle; }
-  .td-item { color: var(--accent); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .td-bin { color: var(--text); }
-  .td-qty { color: #fff; font-weight: 600; text-align: right; }
-  .td-time { color: var(--text-dim); font-size: 0.7rem; white-space: nowrap; }
-  .del-row {
-    background: none;
-    border: none;
-    color: var(--text-dim);
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 4px 6px;
-    border-radius: 4px;
-    transition: color 0.2s;
-  }
-  .del-row:hover { color: var(--warn); }
+.scan-line {
+  position: absolute;
+  left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  animation: scanMove 2s ease-in-out infinite;
+  display: none;
+}
+.scan-line.active { display: block; }
+@keyframes scanMove {
+  0% { top: 15%; opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: 85%; opacity: 0; }
+}
 
-  .stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-  .stat {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 14px 12px;
-    text-align: center;
-  }
-  .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--accent); display: block; line-height: 1; margin-bottom: 4px; }
-  .stat-lbl { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; font-family: var(--mono); }
+.scan-btn {
+  width: 100%;
+  padding: 15px 20px;
+  background: var(--ink);
+  border: none;
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.3s var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.scan-btn svg { width: 18px; height: 18px; }
+.scan-btn:hover {
+  background: var(--gold-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(42,37,32,0.15);
+}
+.scan-btn.scanning {
+  background: var(--rose);
+  animation: subtlePulse 2s ease-in-out infinite;
+}
+@keyframes subtlePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(196,117,106,0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(196,117,106,0); }
+}
+
+/* ── Code Display ── */
+.code-display {
+  background: var(--parchment);
+  border: 1px solid var(--sand);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  transition: all 0.3s var(--transition);
+}
+.code-display.has-code {
+  border-color: var(--gold-light);
+  background: linear-gradient(135deg, #fdf9f4, #f8f2e8);
+}
+.code-value {
+  font-family: var(--serif);
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--gold-dark);
+  letter-spacing: 0.03em;
+  flex: 1;
+  word-break: break-all;
+}
+.code-placeholder {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex-shrink: 0;
+  animation: glow 2s ease-in-out infinite;
+}
+@keyframes glow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(184,149,106,0.5); opacity: 1; }
+  50% { box-shadow: 0 0 0 5px rgba(184,149,106,0); opacity: 0.6; }
+}
+
+/* ── Form Fields ── */
+.field { margin-bottom: 16px; }
+.field:last-of-type { margin-bottom: 0; }
+
+label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--stone);
+  margin-bottom: 7px;
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  background: var(--parchment);
+  border: 1px solid var(--sand);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 400;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: all 0.25s var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+input::placeholder { color: var(--muted); }
+input:focus {
+  border-color: var(--gold-light);
+  background: var(--warm-white);
+  box-shadow: 0 0 0 3px rgba(184,149,106,0.12);
+}
+input.filled {
+  border-color: var(--gold-light);
+  background: linear-gradient(135deg, #fdf9f4, #f8f2e8);
+  color: var(--gold-dark);
+  font-style: italic;
+  font-family: var(--serif);
+  font-size: 1rem;
+}
+
+/* ── Save Button ── */
+.save-btn {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  border: none;
+  color: var(--warm-white);
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.3s var(--transition);
+  margin-top: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.save-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.save-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(184,149,106,0.4);
+}
+.save-btn:hover::before { opacity: 1; }
+.save-btn:active { transform: translateY(0); }
+
+/* ── Stats ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.stat {
+  background: var(--warm-white);
+  border: 1px solid var(--sand);
+  border-radius: var(--radius);
+  padding: 18px 12px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s var(--transition);
+}
+.stat:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.stat-val {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 300;
+  color: var(--ink);
+  display: block;
+  line-height: 1;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+.stat-lbl {
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--stone);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* ── Log ── */
+.log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.log-count {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--stone);
+  letter-spacing: 0.05em;
+}
+.clear-btn {
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rose);
+  background: rgba(196,117,106,0.08);
+  border: 1px solid rgba(196,117,106,0.2);
+  padding: 6px 12px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clear-btn:hover { background: rgba(196,117,106,0.15); }
+
+.log-empty {
+  text-align: center;
+  padding: 52px 20px;
+  color: var(--muted);
+}
+.log-empty-icon {
+  font-family: var(--serif);
+  font-size: 3rem;
+  font-style: italic;
+  font-weight: 300;
+  color: var(--sand);
+  display: block;
+  margin-bottom: 12px;
+}
+.log-empty p {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--stone);
+}
+
+/* ── Log Entries ── */
+.log-entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--parchment);
+  align-items: center;
+  transition: background 0.2s;
+  animation: fadeUp 0.3s var(--transition) both;
+}
+.log-entry:last-child { border-bottom: none; }
+
+.entry-main { min-width: 0; }
+.entry-code {
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-style: italic;
+  color: var(--gold-dark);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  line-height: 1.3;
+}
+.entry-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.entry-bin {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--slate);
+  background: var(--parchment);
+  padding: 2px 8px;
+  border-radius: 50px;
+  letter-spacing: 0.02em;
+}
+.entry-time {
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+
+.entry-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.entry-qty {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.entry-qty-lbl {
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.del-row {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  line-height: 1;
+}
+.del-row:hover { color: var(--rose); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 11px 22px;
+  border-radius: 50px;
+  opacity: 0;
+  transition: all 0.35s var(--transition);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 200;
+  box-shadow: 0 8px 32px rgba(42,37,32,0.2);
+}
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.toast.success { background: var(--sage); }
+.toast.error { background: var(--rose); }
+
+/* ── Animations ── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Nav bottom pills animation stagger ── */
+.card:nth-child(1) { animation: fadeUp 0.4s var(--transition) 0.1s both; }
+.card:nth-child(2) { animation: fadeUp 0.4s var(--transition) 0.18s both; }
+.card:nth-child(3) { animation: fadeUp 0.4s var(--transition) 0.26s both; }
 </style>
 </head>
 <body>
 <div class="app">
+
+  <!-- Header -->
   <header>
-    <div class="logo">Scan<span>Stock</span></div>
-    <div style="font-family:var(--mono);font-size:0.7rem;color:var(--text-dim)" id="clock"></div>
+    <div class="brand">
+      <span class="brand-name"><em>Vault</em>ory</span>
+      <span class="brand-sub">Inventory System</span>
+    </div>
+    <div class="header-right">
+      <span id="clock"></span>
+      <span id="date-display"></span>
+    </div>
   </header>
 
+  <div class="header-divider"></div>
+
+  <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" id="tab-scan" onclick="switchTab('scan', this)">&#9632; Scan Entry</button>
-    <button class="tab-btn" id="tab-log" onclick="switchTab('log', this)">&#9776; Log</button>
+    <button class="tab-btn active" id="tab-scan" onclick="switchTab('scan', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+        <rect x="7" y="7" width="10" height="10" rx="1"/>
+      </svg>
+      Scan Entry
+    </button>
+    <button class="tab-btn" id="tab-log" onclick="switchTab('log', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/>
+        <line x1="9" y1="16" x2="13" y2="16"/>
+      </svg>
+      Log
+    </button>
   </div>
 
-  <!-- SCAN PAGE -->
+  <!-- ── SCAN PAGE ── -->
   <div class="page active" id="page-scan">
 
+    <!-- Scanner Card -->
     <div class="card">
-      <div class="card-title">&#9654; QR / Barcode Scanner</div>
-      <div id="qr-reader" style="display:none;margin-bottom:12px;"></div>
+      <div class="card-eyebrow">Camera</div>
+      <div class="card-title">QR &amp; Barcode Scanner</div>
+
+      <div style="position:relative;">
+        <div id="qr-reader" style="display:none;"></div>
+        <div class="scanner-frame" id="scannerFrame">
+          <div class="scanner-corner-bl"></div>
+          <div class="scanner-corner-br"></div>
+        </div>
+        <div class="scan-line" id="scanLine"></div>
+      </div>
+
       <button class="scan-btn" id="scanToggleBtn" onclick="toggleScanner()">
-        <span>&#9641;</span> Start Camera Scanner
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
+          <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        Activate Scanner
       </button>
     </div>
 
+    <!-- Item Code Card -->
     <div class="card">
-      <div class="card-title">&#9670; Item Code</div>
-      <div class="scanned-code" id="codeDisplay">
-        <span class="placeholder">Scan QR or enter manually below…</span>
+      <div class="card-eyebrow">Item</div>
+      <div class="card-title">Product Code</div>
+
+      <div class="code-display" id="codeDisplay">
+        <span class="code-placeholder">Awaiting scan or manual entry…</span>
       </div>
-      <div class="field" style="margin-top:12px;">
-        <label>Manual Item Code</label>
-        <input type="text" id="itemCodeInput" placeholder="e.g. SKU-00421" oninput="syncCode(this.value)">
+
+      <div class="field">
+        <label>Manual Entry</label>
+        <input type="text" id="itemCodeInput" placeholder="e.g. SKU-00421" oninput="syncCode(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
       </div>
     </div>
 
+    <!-- Details Card -->
     <div class="card">
-      <div class="card-title">&#9632; Entry Details</div>
+      <div class="card-eyebrow">Details</div>
+      <div class="card-title">Entry Information</div>
+
       <div class="field">
         <label>Bin Location</label>
-        <input type="text" id="binInput" placeholder="e.g. A-12, Rack 3B">
+        <input type="text" id="binInput" placeholder="e.g. A-12, Rack 3B" autocomplete="off">
       </div>
       <div class="field">
         <label>Quantity</label>
         <input type="number" id="qtyInput" placeholder="Enter quantity" min="0" step="1">
       </div>
+
       <button class="save-btn" onclick="saveEntry()">Save Entry</button>
     </div>
 
   </div>
 
-  <!-- LOG PAGE -->
+  <!-- ── LOG PAGE ── -->
   <div class="page" id="page-log">
 
     <div class="stats">
-      <div class="stat"><span class="stat-val" id="stat-entries">0</span><span class="stat-lbl">Entries</span></div>
-      <div class="stat"><span class="stat-val" id="stat-items">0</span><span class="stat-lbl">Items</span></div>
-      <div class="stat"><span class="stat-val" id="stat-qty">0</span><span class="stat-lbl">Total Qty</span></div>
+      <div class="stat">
+        <span class="stat-val" id="stat-entries">0</span>
+        <span class="stat-lbl">Entries</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val" id="stat-items">0</span>
+        <span class="stat-lbl">Items</span>
+      </div>
+      <div class="stat">
+        <span class="stat-val" id="stat-qty">0</span>
+        <span class="stat-lbl">Total Qty</span>
+      </div>
     </div>
 
     <div class="card">
       <div class="log-header">
-        <div class="card-title" style="margin:0">&#9776; Entry Log</div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div>
+          <div class="card-eyebrow" style="margin-bottom:2px;">History</div>
+          <div class="card-title" style="margin-bottom:0;">Entry Log</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
           <span class="log-count" id="logCount">0 records</span>
           <button class="clear-btn" onclick="clearLog()">Clear All</button>
         </div>
       </div>
-      <div class="log-table-wrap" id="logContainer">
-        <div class="log-empty">No entries yet.<br>Scan or enter an item to get started.</div>
+      <div id="logContainer">
+        <div class="log-empty">
+          <span class="log-empty-icon">∅</span>
+          <p>No entries recorded yet.<br>Begin scanning to build your log.</p>
+        </div>
       </div>
     </div>
 
@@ -376,14 +780,18 @@
   let scanning = false;
   let currentCode = '';
 
+  // Clock & date
   function updateClock() {
     const now = new Date();
     document.getElementById('clock').textContent =
-      now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('date-display').textContent =
+      now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
   }
   updateClock();
   setInterval(updateClock, 1000);
 
+  // Tab switch
   function switchTab(tab, btn) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -393,56 +801,62 @@
     if (tab === 'scan' && scanning) stopScanner();
   }
 
+  // Scanner
   function toggleScanner() {
-    if (scanning) { stopScanner(); return; }
-    startScanner();
+    scanning ? stopScanner() : startScanner();
   }
 
   function startScanner() {
     const btn = document.getElementById('scanToggleBtn');
     const readerEl = document.getElementById('qr-reader');
+    const frame = document.getElementById('scannerFrame');
+    const line = document.getElementById('scanLine');
+
     readerEl.style.display = 'block';
+    readerEl.style.marginBottom = '14px';
+    frame.classList.add('active');
+    line.classList.add('active');
     btn.className = 'scan-btn scanning';
-    btn.innerHTML = '<span>&#9632;</span> Stop Scanner';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Stop Scanner`;
     scanning = true;
 
     html5QrCode = new Html5Qrcode("qr-reader");
     html5QrCode.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+      { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.2 },
       onScanSuccess,
       () => {}
-    ).catch(err => {
-      showToast('Camera unavailable');
+    ).catch(() => {
+      showToast('Camera unavailable', 'error');
       stopScanner();
     });
   }
 
   function stopScanner() {
     if (html5QrCode && scanning) {
-      html5QrCode.stop().then(() => {
-        html5QrCode.clear();
-        html5QrCode = null;
-      }).catch(() => {});
+      html5QrCode.stop().then(() => { html5QrCode.clear(); html5QrCode = null; }).catch(() => {});
     }
     scanning = false;
     const btn = document.getElementById('scanToggleBtn');
     btn.className = 'scan-btn';
-    btn.innerHTML = '<span>&#9641;</span> Start Camera Scanner';
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Activate Scanner`;
     document.getElementById('qr-reader').style.display = 'none';
+    document.getElementById('scannerFrame').classList.remove('active');
+    document.getElementById('scanLine').classList.remove('active');
   }
 
   function onScanSuccess(decodedText) {
     stopScanner();
     setCode(decodedText);
-    showToast('Scanned ✓');
-    document.getElementById('binInput').focus();
+    showToast('Scanned successfully', 'success');
+    setTimeout(() => document.getElementById('binInput').focus(), 200);
   }
 
   function setCode(val) {
     currentCode = val;
-    document.getElementById('codeDisplay').innerHTML =
-      '<span class="pulse-dot"></span>' + escHtml(val);
+    const display = document.getElementById('codeDisplay');
+    display.classList.add('has-code');
+    display.innerHTML = `<span class="status-dot"></span><span class="code-value">${escHtml(val)}</span>`;
     const inp = document.getElementById('itemCodeInput');
     inp.value = val;
     inp.classList.add('filled');
@@ -452,97 +866,87 @@
     currentCode = val;
     const display = document.getElementById('codeDisplay');
     if (val) {
-      display.innerHTML = '<span class="pulse-dot"></span>' + escHtml(val);
+      display.classList.add('has-code');
+      display.innerHTML = `<span class="status-dot"></span><span class="code-value">${escHtml(val)}</span>`;
     } else {
-      display.innerHTML = '<span class="placeholder">Scan QR or enter manually below…</span>';
+      display.classList.remove('has-code');
+      display.innerHTML = `<span class="code-placeholder">Awaiting scan or manual entry…</span>`;
     }
   }
 
   function saveEntry() {
     const code = (currentCode || document.getElementById('itemCodeInput').value).trim();
-    const bin = document.getElementById('binInput').value.trim();
-    const qtyVal = document.getElementById('qtyInput').value.trim();
+    const bin  = document.getElementById('binInput').value.trim();
+    const qtyV = document.getElementById('qtyInput').value.trim();
 
-    if (!code) { showToast('Item code is required'); return; }
-    if (!bin)  { showToast('Bin location is required'); return; }
-    if (qtyVal === '' || isNaN(Number(qtyVal))) { showToast('Valid quantity is required'); return; }
+    if (!code)  { showToast('Item code is required', 'error'); return; }
+    if (!bin)   { showToast('Bin location is required', 'error'); return; }
+    if (qtyV === '' || isNaN(Number(qtyV))) { showToast('Valid quantity required', 'error'); return; }
 
-    const entry = {
-      id: Date.now(),
-      code,
-      bin,
-      qty: Number(qtyVal),
-      time: new Date().toISOString()
-    };
-
+    const entry = { id: Date.now(), code, bin, qty: Number(qtyV), time: new Date().toISOString() };
     const log = getLog();
     log.unshift(entry);
     saveLog(log);
-    showToast('Entry saved ✓');
+    showToast('Entry saved', 'success');
     resetForm();
   }
 
   function resetForm() {
     currentCode = '';
-    document.getElementById('itemCodeInput').value = '';
-    document.getElementById('itemCodeInput').classList.remove('filled');
-    document.getElementById('binInput').value = '';
-    document.getElementById('qtyInput').value = '';
-    document.getElementById('codeDisplay').innerHTML =
-      '<span class="placeholder">Scan QR or enter manually below…</span>';
+    ['itemCodeInput','binInput','qtyInput'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = '';
+      el.classList.remove('filled');
+    });
+    const d = document.getElementById('codeDisplay');
+    d.classList.remove('has-code');
+    d.innerHTML = `<span class="code-placeholder">Awaiting scan or manual entry…</span>`;
   }
 
-  function getLog() {
-    try { return JSON.parse(localStorage.getItem('scanstock_log') || '[]'); } catch { return []; }
-  }
-  function saveLog(log) {
-    localStorage.setItem('scanstock_log', JSON.stringify(log));
-  }
+  // Storage
+  function getLog()      { try { return JSON.parse(localStorage.getItem('vaultory_log') || '[]'); } catch { return []; } }
+  function saveLog(log)  { localStorage.setItem('vaultory_log', JSON.stringify(log)); }
 
+  // Render log
   function renderLog() {
     const log = getLog();
     const container = document.getElementById('logContainer');
-
-    const uniqueItems = new Set(log.map(e => e.code)).size;
+    const unique = new Set(log.map(e => e.code)).size;
     const totalQty = log.reduce((s, e) => s + e.qty, 0);
+
     document.getElementById('stat-entries').textContent = log.length;
-    document.getElementById('stat-items').textContent = uniqueItems;
-    document.getElementById('stat-qty').textContent = totalQty;
-    document.getElementById('logCount').textContent = log.length + ' record' + (log.length !== 1 ? 's' : '');
+    document.getElementById('stat-items').textContent   = unique;
+    document.getElementById('stat-qty').textContent     = totalQty;
+    document.getElementById('logCount').textContent     = log.length + ' record' + (log.length !== 1 ? 's' : '');
 
     if (!log.length) {
-      container.innerHTML = '<div class="log-empty">No entries yet.<br>Scan or enter an item to get started.</div>';
+      container.innerHTML = `<div class="log-empty"><span class="log-empty-icon">∅</span><p>No entries recorded yet.<br>Begin scanning to build your log.</p></div>`;
       return;
     }
 
-    const rows = log.map(e => {
+    container.innerHTML = log.map((e, i) => {
       const d = new Date(e.time);
-      const dateStr = d.toLocaleDateString([], {month:'short', day:'numeric'});
-      const timeStr = d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-      return `<tr>
-        <td class="td-item" title="${escHtml(e.code)}">${escHtml(e.code)}</td>
-        <td class="td-bin">${escHtml(e.bin)}</td>
-        <td class="td-qty">${e.qty}</td>
-        <td class="td-time">${dateStr}<br>${timeStr}</td>
-        <td><button class="del-row" onclick="deleteEntry(${e.id})">✕</button></td>
-      </tr>`;
+      const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `<div class="log-entry" style="animation-delay:${i * 0.04}s">
+        <div class="entry-main">
+          <span class="entry-code" title="${escHtml(e.code)}">${escHtml(e.code)}</span>
+          <div class="entry-meta">
+            <span class="entry-bin">${escHtml(e.bin)}</span>
+            <span class="entry-time">${dateStr} · ${timeStr}</span>
+          </div>
+        </div>
+        <div class="entry-right">
+          <span class="entry-qty">${e.qty}</span>
+          <span class="entry-qty-lbl">qty</span>
+          <button class="del-row" onclick="deleteEntry(${e.id})" title="Delete">✕</button>
+        </div>
+      </div>`;
     }).join('');
-
-    container.innerHTML = `<table>
-      <thead><tr>
-        <th>Item Code</th>
-        <th>Bin</th>
-        <th style="text-align:right">Qty</th>
-        <th>Time</th>
-        <th></th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
   }
 
   function deleteEntry(id) {
-    const log = getLog().filter(e => e.id !== id);
-    saveLog(log);
+    saveLog(getLog().filter(e => e.id !== id));
     renderLog();
   }
 
@@ -554,18 +958,16 @@
   }
 
   function escHtml(s) {
-    return String(s)
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;');
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function showToast(msg) {
+  function showToast(msg, type = '') {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.className = 'toast' + (type ? ' ' + type : '');
+    void t.offsetWidth;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2200);
+    setTimeout(() => t.classList.remove('show'), 2400);
   }
 </script>
 </body>
