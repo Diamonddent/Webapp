@@ -1,974 +1,873 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Vaultory — Inventory</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<style>
-:root {
-  --cream: #faf8f4;
-  --warm-white: #ffffff;
-  --parchment: #f2ede4;
-  --sand: #e8dfd0;
-  --muted: #c8bfb0;
-  --stone: #9a9086;
-  --slate: #5c5650;
-  --ink: #2a2520;
-  --gold: #b8956a;
-  --gold-light: #d4b896;
-  --gold-dark: #8a6840;
-  --rose: #c4756a;
-  --sage: #7a9080;
-  --shadow-sm: 0 1px 4px rgba(42,37,32,0.06), 0 2px 12px rgba(42,37,32,0.04);
-  --shadow-md: 0 4px 20px rgba(42,37,32,0.08), 0 1px 4px rgba(42,37,32,0.05);
-  --shadow-lg: 0 12px 48px rgba(42,37,32,0.12), 0 4px 16px rgba(42,37,32,0.06);
-  --radius: 18px;
-  --radius-sm: 10px;
-  --serif: 'Cormorant Garamond', Georgia, serif;
-  --sans: 'DM Sans', sans-serif;
-  --transition: cubic-bezier(0.4, 0, 0.2, 1);
-}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Sulai Inventory</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Playfair+Display:ital,wght@0,400;0,500;1,400;1,500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-gradient-start: #f6f3ef;
+      --bg-gradient-end: #ede8e0;
+      --surface: rgba(255, 255, 255, 0.92);
+      --surface-elevated: rgba(255, 255, 255, 0.98);
+      --glass-border: rgba(184, 149, 106, 0.25);
+      --ink: #1e1b18;
+      --ink-soft: #3c3630;
+      --gold: #b48c48;
+      --gold-dark: #8a6232;
+      --gold-glow: rgba(180, 140, 72, 0.2);
+      --rose: #d4876e;
+      --sage: #6e8b72;
+      --stone: #928b82;
+      --sand: #e2d9ce;
+      --shadow-sm: 0 8px 20px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 20px 35px -12px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.02);
+      --shadow-lg: 0 30px 45px -15px rgba(0, 0, 0, 0.15);
+      --radius-card: 32px;
+      --radius-element: 20px;
+      --radius-sm: 14px;
+      --transition: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
 
-html { scroll-behavior: smooth; }
+    body {
+      background: linear-gradient(145deg, var(--bg-gradient-start), var(--bg-gradient-end));
+      font-family: 'Inter', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
+      padding: 24px 16px 100px;
+      position: relative;
+    }
 
-body {
-  background: var(--cream);
-  color: var(--ink);
-  font-family: var(--sans);
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-}
+    /* subtle noise + glow */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 20% 30%, rgba(255,245,235,0.4) 0%, rgba(250,245,235,0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-/* Subtle noise texture overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.4;
-}
+    .app-container {
+      max-width: 520px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+    }
 
-.app {
-  position: relative;
-  z-index: 1;
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 0 20px env(safe-area-inset-bottom, 24px);
-  padding-bottom: 100px;
-}
+    /* header area */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 28px;
+      padding: 0 4px;
+    }
+    .brand h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      background: linear-gradient(135deg, var(--ink) 0%, #5e4b34 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .brand p {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--stone);
+      font-weight: 500;
+      margin-top: 6px;
+    }
+    .datetime {
+      text-align: right;
+    }
+    #clock {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem;
+      font-weight: 500;
+      color: var(--gold-dark);
+      letter-spacing: 0.5px;
+    }
+    #date-display {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--stone);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
 
-/* ── Header ── */
-header {
-  padding: 52px 0 28px;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  animation: fadeDown 0.6s var(--transition) both;
-}
+    /* glassmorphic tabs */
+    .tabs {
+      display: flex;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      border-radius: 60px;
+      padding: 6px;
+      margin-bottom: 28px;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px 8px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--stone);
+      transition: all 0.25s var(--transition);
+      cursor: pointer;
+    }
+    .tab-btn svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      fill: none;
+    }
+    .tab-btn.active {
+      background: var(--surface-elevated);
+      color: var(--gold-dark);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border: 0.5px solid rgba(255,255,255,0.6);
+    }
 
-.brand { line-height: 1; }
-.brand-name {
-  font-family: var(--serif);
-  font-size: 2.1rem;
-  font-weight: 300;
-  color: var(--ink);
-  letter-spacing: 0.01em;
-  display: block;
-  line-height: 1;
-}
-.brand-name em {
-  font-style: italic;
-  color: var(--gold);
-}
-.brand-sub {
-  font-size: 0.65rem;
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--stone);
-  display: block;
-  margin-top: 5px;
-}
+    /* cards universal */
+    .card {
+      background: var(--surface);
+      backdrop-filter: blur(2px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-card);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.2s var(--transition), box-shadow 0.3s;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .card-header .icon {
+      background: var(--gold-glow);
+      width: 40px;
+      height: 40px;
+      border-radius: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-header h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+    }
+    .card-header p {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--gold);
+      font-weight: 600;
+    }
 
-.header-right {
-  text-align: right;
-}
-#clock {
-  font-family: var(--serif);
-  font-size: 1.1rem;
-  font-weight: 300;
-  color: var(--slate);
-  letter-spacing: 0.05em;
-}
-#date-display {
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-  display: block;
-  margin-top: 2px;
-}
+    /* scanner area */
+    .scanner-wrapper {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      background: #0c0a08;
+    }
+    #qr-reader {
+      width: 100%;
+    }
+    #qr-reader video {
+      width: 100%;
+      border-radius: 24px;
+    }
+    .scanner-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: 24px;
+      box-shadow: inset 0 0 0 2px rgba(180,140,72,0.4), 0 0 0 2px rgba(0,0,0,0.1);
+    }
+    .scan-frame {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 200px;
+      height: 200px;
+      border: 1.5px solid var(--gold);
+      border-radius: 28px;
+      box-shadow: 0 0 0 1000px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s;
+      display: none;
+    }
+    .scan-line {
+      position: absolute;
+      top: 0;
+      left: 10%;
+      width: 80%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), var(--gold), transparent);
+      animation: scanMove 2s linear infinite;
+      display: none;
+      box-shadow: 0 0 6px gold;
+    }
+    .scan-frame.active, .scan-line.active { display: block; }
+    @keyframes scanMove {
+      0% { top: 15%; opacity: 0.6; }
+      50% { top: 75%; opacity: 1; }
+      100% { top: 15%; opacity: 0.6; }
+    }
 
-/* ── Divider ── */
-.header-divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--sand) 30%, var(--gold-light) 50%, var(--sand) 70%, transparent);
-  margin-bottom: 28px;
-  animation: fadeIn 0.8s var(--transition) 0.2s both;
-}
+    .btn-glow {
+      width: 100%;
+      background: linear-gradient(115deg, #2c241e, #1f1b17);
+      border: none;
+      padding: 15px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: all 0.25s;
+      margin-top: 8px;
+    }
+    .btn-glow.scanning {
+      background: linear-gradient(115deg, #c07a62, #aa5e46);
+      box-shadow: 0 0 12px rgba(212, 135, 110, 0.5);
+    }
+    .btn-glow:hover { transform: scale(0.98); filter: brightness(1.03); }
 
-/* ── Tabs ── */
-.tabs {
-  display: flex;
-  background: var(--warm-white);
-  border: 1px solid var(--sand);
-  border-radius: 50px;
-  padding: 5px;
-  gap: 4px;
-  margin-bottom: 28px;
-  box-shadow: var(--shadow-sm);
-  animation: fadeUp 0.5s var(--transition) 0.15s both;
-}
+    /* code badge */
+    .code-badge {
+      background: #f2ede6;
+      border-radius: 20px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: all 0.2s;
+    }
+    .code-badge.has-code {
+      background: linear-gradient(135deg, #fff3e8, #faead9);
+      border-left: 4px solid var(--gold);
+    }
+    .code-badge span:first-child {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--stone);
+    }
+    .code-value {
+      font-family: monospace;
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: -0.2px;
+      color: var(--gold-dark);
+      word-break: break-all;
+    }
 
-.tab-btn {
-  flex: 1;
-  padding: 11px 16px;
-  border: none;
-  background: transparent;
-  color: var(--stone);
-  font-family: var(--sans);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: all 0.3s var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-}
-.tab-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
-.tab-btn.active {
-  background: var(--ink);
-  color: var(--cream);
-  box-shadow: 0 2px 12px rgba(42,37,32,0.2);
-}
+    /* forms */
+    .input-group {
+      margin-bottom: 18px;
+    }
+    .input-group label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--stone);
+      display: block;
+      margin-bottom: 6px;
+    }
+    input {
+      width: 100%;
+      background: #f9f6f0;
+      border: 1px solid #e2d8ce;
+      border-radius: 20px;
+      padding: 14px 18px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      outline: none;
+      font-family: 'Inter', monospace;
+    }
+    input:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px var(--gold-glow);
+      background: white;
+    }
+    .filled {
+      background: #fef9f2;
+      border-color: var(--gold-light, #c9a96b);
+    }
 
-/* ── Pages ── */
-.page { display: none; }
-.page.active { display: block; animation: fadeUp 0.4s var(--transition) both; }
+    .save-action {
+      background: var(--gold);
+      border: none;
+      width: 100%;
+      padding: 15px;
+      border-radius: 40px;
+      font-weight: 700;
+      color: white;
+      font-size: 0.9rem;
+      margin-top: 20px;
+      transition: all 0.2s;
+      cursor: pointer;
+      box-shadow: 0 6px 14px rgba(180, 140, 72, 0.3);
+    }
+    .save-action:active { transform: scale(0.97); }
 
-/* ── Card ── */
-.card {
-  background: var(--warm-white);
-  border: 1px solid var(--sand);
-  border-radius: var(--radius);
-  padding: 24px;
-  margin-bottom: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.3s var(--transition);
-}
-.card:hover { box-shadow: var(--shadow-md); }
+    /* stats row */
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--surface-elevated);
+      backdrop-filter: blur(8px);
+      border-radius: 28px;
+      flex: 1;
+      padding: 16px 8px;
+      text-align: center;
+      border: 1px solid rgba(255,255,240,0.7);
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--gold-dark);
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      color: var(--stone);
+      letter-spacing: 1px;
+    }
 
-.card-eyebrow {
-  font-size: 0.6rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--gold);
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.card-eyebrow::before {
-  content: '';
-  display: inline-block;
-  width: 16px;
-  height: 1px;
-  background: var(--gold-light);
-}
+    /* log entries - row wise premium */
+    .log-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .export-btn, .clear-btn {
+      background: rgba(128, 108, 88, 0.1);
+      border: 0.5px solid rgba(180, 140, 72, 0.3);
+      padding: 8px 16px;
+      border-radius: 40px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .export-btn:hover, .clear-btn:hover { background: rgba(180, 140, 72, 0.2); transform: translateY(-1px);}
+    .log-list {
+      max-height: 460px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    /* row wise design: each entry as clean horizontal table row style on mobile? */
+    .log-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffffcc;
+      backdrop-filter: blur(4px);
+      border-radius: 20px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      transition: all 0.2s;
+      border: 1px solid #ece3d8;
+    }
+    .log-row:hover {
+      background: #fffaf2;
+      transform: translateX(4px);
+      border-color: var(--gold-light);
+    }
+    .row-info {
+      flex: 3;
+      min-width: 0;
+    }
+    .row-code {
+      font-weight: 700;
+      font-size: 0.9rem;
+      font-family: monospace;
+      letter-spacing: -0.2px;
+      color: #2c241e;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .row-badge {
+      font-size: 0.65rem;
+      background: #e9e0d3;
+      padding: 2px 10px;
+      border-radius: 30px;
+      color: #6b4c2c;
+      font-weight: 500;
+    }
+    .row-time {
+      font-size: 0.6rem;
+      color: #9a8c7c;
+      margin-top: 4px;
+    }
+    .row-qty {
+      flex: 0.5;
+      text-align: right;
+      font-size: 1.5rem;
+      font-weight: 500;
+      font-family: 'Playfair Display', serif;
+      color: var(--gold-dark);
+    }
+    .row-actions {
+      display: flex;
+      gap: 10px;
+      margin-left: 12px;
+    }
+    .delete-row {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #bfa98e;
+      transition: 0.2s;
+      padding: 4px;
+      border-radius: 30px;
+    }
+    .delete-row:hover { color: var(--rose); background: #fff0ea;}
 
-.card-title {
-  font-family: var(--serif);
-  font-size: 1.25rem;
-  font-weight: 400;
-  color: var(--ink);
-  margin-bottom: 20px;
-  letter-spacing: 0.01em;
-}
-
-/* ── Scanner ── */
-#qr-reader {
-  width: 100%;
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: var(--ink);
-  margin-bottom: 14px;
-  position: relative;
-}
-#qr-reader video { border-radius: var(--radius-sm); display: block; width: 100%; }
-#qr-reader img { display: none !important; }
-
-/* Scanner frame overlay */
-.scanner-frame {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 180px; height: 180px;
-  pointer-events: none;
-  z-index: 10;
-  display: none;
-}
-.scanner-frame.active { display: block; }
-.scanner-frame::before, .scanner-frame::after,
-.scanner-corner-bl, .scanner-corner-br {
-  content: '';
-  position: absolute;
-  width: 28px; height: 28px;
-  border-color: var(--gold);
-  border-style: solid;
-}
-.scanner-frame::before { top: 0; left: 0; border-width: 2px 0 0 2px; border-radius: 4px 0 0 0; }
-.scanner-frame::after  { top: 0; right: 0; border-width: 2px 2px 0 0; border-radius: 0 4px 0 0; }
-.scanner-corner-bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; border-radius: 0 0 0 4px; }
-.scanner-corner-br { bottom: 0; right: 0; border-width: 0 2px 2px 0; border-radius: 0 0 4px 0; }
-
-.scan-line {
-  position: absolute;
-  left: 10%; right: 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold), transparent);
-  animation: scanMove 2s ease-in-out infinite;
-  display: none;
-}
-.scan-line.active { display: block; }
-@keyframes scanMove {
-  0% { top: 15%; opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { top: 85%; opacity: 0; }
-}
-
-.scan-btn {
-  width: 100%;
-  padding: 15px 20px;
-  background: var(--ink);
-  border: none;
-  color: var(--cream);
-  font-family: var(--sans);
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.3s var(--transition);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-}
-.scan-btn svg { width: 18px; height: 18px; }
-.scan-btn:hover {
-  background: var(--gold-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(42,37,32,0.15);
-}
-.scan-btn.scanning {
-  background: var(--rose);
-  animation: subtlePulse 2s ease-in-out infinite;
-}
-@keyframes subtlePulse {
-  0%,100% { box-shadow: 0 0 0 0 rgba(196,117,106,0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(196,117,106,0); }
-}
-
-/* ── Code Display ── */
-.code-display {
-  background: var(--parchment);
-  border: 1px solid var(--sand);
-  border-radius: var(--radius-sm);
-  padding: 14px 16px;
-  min-height: 50px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-  transition: all 0.3s var(--transition);
-}
-.code-display.has-code {
-  border-color: var(--gold-light);
-  background: linear-gradient(135deg, #fdf9f4, #f8f2e8);
-}
-.code-value {
-  font-family: var(--serif);
-  font-size: 1.1rem;
-  font-style: italic;
-  color: var(--gold-dark);
-  letter-spacing: 0.03em;
-  flex: 1;
-  word-break: break-all;
-}
-.code-placeholder {
-  font-size: 0.82rem;
-  color: var(--muted);
-  font-weight: 400;
-  letter-spacing: 0.01em;
-}
-.status-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: var(--gold);
-  flex-shrink: 0;
-  animation: glow 2s ease-in-out infinite;
-}
-@keyframes glow {
-  0%,100% { box-shadow: 0 0 0 0 rgba(184,149,106,0.5); opacity: 1; }
-  50% { box-shadow: 0 0 0 5px rgba(184,149,106,0); opacity: 0.6; }
-}
-
-/* ── Form Fields ── */
-.field { margin-bottom: 16px; }
-.field:last-of-type { margin-bottom: 0; }
-
-label {
-  display: block;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--stone);
-  margin-bottom: 7px;
-}
-
-input[type="text"],
-input[type="number"] {
-  width: 100%;
-  background: var(--parchment);
-  border: 1px solid var(--sand);
-  color: var(--ink);
-  font-family: var(--sans);
-  font-size: 0.95rem;
-  font-weight: 400;
-  padding: 13px 16px;
-  border-radius: var(--radius-sm);
-  outline: none;
-  transition: all 0.25s var(--transition);
-  -webkit-appearance: none;
-  appearance: none;
-}
-input::placeholder { color: var(--muted); }
-input:focus {
-  border-color: var(--gold-light);
-  background: var(--warm-white);
-  box-shadow: 0 0 0 3px rgba(184,149,106,0.12);
-}
-input.filled {
-  border-color: var(--gold-light);
-  background: linear-gradient(135deg, #fdf9f4, #f8f2e8);
-  color: var(--gold-dark);
-  font-style: italic;
-  font-family: var(--serif);
-  font-size: 1rem;
-}
-
-/* ── Save Button ── */
-.save-btn {
-  width: 100%;
-  padding: 16px 24px;
-  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-  border: none;
-  color: var(--warm-white);
-  font-family: var(--sans);
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.3s var(--transition);
-  margin-top: 20px;
-  position: relative;
-  overflow: hidden;
-}
-.save-btn::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-.save-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(184,149,106,0.4);
-}
-.save-btn:hover::before { opacity: 1; }
-.save-btn:active { transform: translateY(0); }
-
-/* ── Stats ── */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.stat {
-  background: var(--warm-white);
-  border: 1px solid var(--sand);
-  border-radius: var(--radius);
-  padding: 18px 12px;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.3s var(--transition);
-}
-.stat:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-.stat-val {
-  font-family: var(--serif);
-  font-size: 2rem;
-  font-weight: 300;
-  color: var(--ink);
-  display: block;
-  line-height: 1;
-  margin-bottom: 6px;
-  letter-spacing: -0.02em;
-}
-.stat-lbl {
-  font-size: 0.6rem;
-  font-weight: 600;
-  color: var(--stone);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-}
-
-/* ── Log ── */
-.log-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-.log-count {
-  font-size: 0.72rem;
-  font-weight: 400;
-  color: var(--stone);
-  letter-spacing: 0.05em;
-}
-.clear-btn {
-  font-family: var(--sans);
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--rose);
-  background: rgba(196,117,106,0.08);
-  border: 1px solid rgba(196,117,106,0.2);
-  padding: 6px 12px;
-  border-radius: 50px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.clear-btn:hover { background: rgba(196,117,106,0.15); }
-
-.log-empty {
-  text-align: center;
-  padding: 52px 20px;
-  color: var(--muted);
-}
-.log-empty-icon {
-  font-family: var(--serif);
-  font-size: 3rem;
-  font-style: italic;
-  font-weight: 300;
-  color: var(--sand);
-  display: block;
-  margin-bottom: 12px;
-}
-.log-empty p {
-  font-size: 0.82rem;
-  line-height: 1.7;
-  color: var(--stone);
-}
-
-/* ── Log Entries ── */
-.log-entry {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--parchment);
-  align-items: center;
-  transition: background 0.2s;
-  animation: fadeUp 0.3s var(--transition) both;
-}
-.log-entry:last-child { border-bottom: none; }
-
-.entry-main { min-width: 0; }
-.entry-code {
-  font-family: var(--serif);
-  font-size: 1rem;
-  font-style: italic;
-  color: var(--gold-dark);
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-  line-height: 1.3;
-}
-.entry-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 4px;
-  flex-wrap: wrap;
-}
-.entry-bin {
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--slate);
-  background: var(--parchment);
-  padding: 2px 8px;
-  border-radius: 50px;
-  letter-spacing: 0.02em;
-}
-.entry-time {
-  font-size: 0.68rem;
-  color: var(--muted);
-  letter-spacing: 0.03em;
-}
-
-.entry-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  flex-shrink: 0;
-}
-.entry-qty {
-  font-family: var(--serif);
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: var(--ink);
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-.entry-qty-lbl {
-  font-size: 0.55rem;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.del-row {
-  background: none;
-  border: none;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 0.8rem;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color 0.2s;
-  line-height: 1;
-}
-.del-row:hover { color: var(--rose); }
-
-/* ── Toast ── */
-.toast {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%) translateY(16px);
-  background: var(--ink);
-  color: var(--cream);
-  font-family: var(--sans);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  padding: 11px 22px;
-  border-radius: 50px;
-  opacity: 0;
-  transition: all 0.35s var(--transition);
-  pointer-events: none;
-  white-space: nowrap;
-  z-index: 200;
-  box-shadow: 0 8px 32px rgba(42,37,32,0.2);
-}
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-.toast.success { background: var(--sage); }
-.toast.error { background: var(--rose); }
-
-/* ── Animations ── */
-@keyframes fadeDown {
-  from { opacity: 0; transform: translateY(-12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-/* ── Nav bottom pills animation stagger ── */
-.card:nth-child(1) { animation: fadeUp 0.4s var(--transition) 0.1s both; }
-.card:nth-child(2) { animation: fadeUp 0.4s var(--transition) 0.18s both; }
-.card:nth-child(3) { animation: fadeUp 0.4s var(--transition) 0.26s both; }
-</style>
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--stone);
+    }
+    .toast-modern {
+      position: fixed;
+      bottom: 30px;
+      left: 20px;
+      right: 20px;
+      background: #1e1b18dd;
+      backdrop-filter: blur(12px);
+      color: white;
+      text-align: center;
+      padding: 12px;
+      border-radius: 60px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      z-index: 200;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+    .toast-modern.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: #e2d8ce; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 10px; }
+    .page { display: none; animation: fadeUp 0.35s ease; }
+    .page.active { display: block; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: translateY(0);} }
+  </style>
 </head>
 <body>
-<div class="app">
-
-  <!-- Header -->
-  <header>
+<div class="app-container">
+  <div class="header">
     <div class="brand">
-      <span class="brand-name"><em>Vault</em>ory</span>
-      <span class="brand-sub">Inventory System</span>
+      <h1>Vaultory<span style="font-weight:300;">.</span></h1>
+      <p>intelligent inventory</p>
     </div>
-    <div class="header-right">
-      <span id="clock"></span>
-      <span id="date-display"></span>
+    <div class="datetime">
+      <div id="clock">--:--</div>
+      <div id="date-display"></div>
     </div>
-  </header>
+  </div>
 
-  <div class="header-divider"></div>
-
-  <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" id="tab-scan" onclick="switchTab('scan', this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
-        <rect x="7" y="7" width="10" height="10" rx="1"/>
-      </svg>
-      Scan Entry
+    <button class="tab-btn active" id="tabScanBtn">
+      <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>
+      <span>Scan</span>
     </button>
-    <button class="tab-btn" id="tab-log" onclick="switchTab('log', this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-        <rect x="9" y="3" width="6" height="4" rx="1"/>
-        <line x1="9" y1="12" x2="15" y2="12"/>
-        <line x1="9" y1="16" x2="13" y2="16"/>
-      </svg>
-      Log
+    <button class="tab-btn" id="tabLogBtn">
+      <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      <span>Log</span>
     </button>
   </div>
 
-  <!-- ── SCAN PAGE ── -->
-  <div class="page active" id="page-scan">
-
-    <!-- Scanner Card -->
+  <!-- SCAN PAGE -->
+  <div id="scanPage" class="page active">
     <div class="card">
-      <div class="card-eyebrow">Camera</div>
-      <div class="card-title">QR &amp; Barcode Scanner</div>
-
-      <div style="position:relative;">
-        <div id="qr-reader" style="display:none;"></div>
-        <div class="scanner-frame" id="scannerFrame">
-          <div class="scanner-corner-bl"></div>
-          <div class="scanner-corner-br"></div>
-        </div>
-        <div class="scan-line" id="scanLine"></div>
+      <div class="card-header">
+        <div class="icon">📷</div>
+        <div><h3>Live Scanner</h3><p>QR / Barcode</p></div>
       </div>
-
-      <button class="scan-btn" id="scanToggleBtn" onclick="toggleScanner()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/>
-          <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
+      <div class="scanner-wrapper">
+        <div id="qr-reader" style="display:none;"></div>
+        <div class="scanner-overlay"></div>
+        <div class="scan-frame" id="scanFrame"></div>
+        <div class="scan-line" id="scanLineAnim"></div>
+      </div>
+      <button class="btn-glow" id="scannerToggleBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
         Activate Scanner
       </button>
     </div>
 
-    <!-- Item Code Card -->
     <div class="card">
-      <div class="card-eyebrow">Item</div>
-      <div class="card-title">Product Code</div>
-
-      <div class="code-display" id="codeDisplay">
-        <span class="code-placeholder">Awaiting scan or manual entry…</span>
+      <div class="card-header"><div class="icon">🏷️</div><div><h3>Product Code</h3><p>Scan or type</p></div></div>
+      <div class="code-badge" id="codeDisplayArea">
+        <span>🔖 CODE</span>
+        <span class="code-value" id="codeValueDisplay">—</span>
       </div>
-
-      <div class="field">
+      <div class="input-group">
         <label>Manual Entry</label>
-        <input type="text" id="itemCodeInput" placeholder="e.g. SKU-00421" oninput="syncCode(this.value)" autocomplete="off" autocorrect="off" spellcheck="false">
+        <input type="text" id="manualCodeInput" placeholder="e.g. INV-98765" autocomplete="off">
       </div>
     </div>
 
-    <!-- Details Card -->
     <div class="card">
-      <div class="card-eyebrow">Details</div>
-      <div class="card-title">Entry Information</div>
-
-      <div class="field">
-        <label>Bin Location</label>
-        <input type="text" id="binInput" placeholder="e.g. A-12, Rack 3B" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Quantity</label>
-        <input type="number" id="qtyInput" placeholder="Enter quantity" min="0" step="1">
-      </div>
-
-      <button class="save-btn" onclick="saveEntry()">Save Entry</button>
+      <div class="card-header"><div class="icon">📦</div><div><h3>Item Details</h3><p>Bin & quantity</p></div></div>
+      <div class="input-group"><label>Bin location</label><input type="text" id="binField" placeholder="Aisle-2, Rack C"></div>
+      <div class="input-group"><label>Quantity</label><input type="number" id="qtyField" placeholder="Qty" min="1" value="1"></div>
+      <button class="save-action" id="saveEntryBtn">✧ SAVE TO INVENTORY ✧</button>
     </div>
-
   </div>
 
-  <!-- ── LOG PAGE ── -->
-  <div class="page" id="page-log">
-
-    <div class="stats">
-      <div class="stat">
-        <span class="stat-val" id="stat-entries">0</span>
-        <span class="stat-lbl">Entries</span>
-      </div>
-      <div class="stat">
-        <span class="stat-val" id="stat-items">0</span>
-        <span class="stat-lbl">Items</span>
-      </div>
-      <div class="stat">
-        <span class="stat-val" id="stat-qty">0</span>
-        <span class="stat-lbl">Total Qty</span>
-      </div>
+  <!-- LOG PAGE -->
+  <div id="logPage" class="page">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-number" id="statEntries">0</div><div class="stat-label">Entries</div></div>
+      <div class="stat-card"><div class="stat-number" id="statItems">0</div><div class="stat-label">Unique items</div></div>
+      <div class="stat-card"><div class="stat-number" id="statTotalQty">0</div><div class="stat-label">Total Qty</div></div>
     </div>
 
     <div class="card">
-      <div class="log-header">
-        <div>
-          <div class="card-eyebrow" style="margin-bottom:2px;">History</div>
-          <div class="card-title" style="margin-bottom:0;">Entry Log</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-          <span class="log-count" id="logCount">0 records</span>
-          <button class="clear-btn" onclick="clearLog()">Clear All</button>
+      <div class="log-actions">
+        <div style="font-weight: 600; font-size:0.9rem;">📋 Inventory log</div>
+        <div style="display:flex; gap:10px;">
+          <button class="export-btn" id="exportCsvBtn">📎 Export CSV</button>
+          <button class="clear-btn" id="clearLogBtn">🗑 Clear all</button>
         </div>
       </div>
-      <div id="logContainer">
-        <div class="log-empty">
-          <span class="log-empty-icon">∅</span>
-          <p>No entries recorded yet.<br>Begin scanning to build your log.</p>
-        </div>
+      <div id="logListContainer" class="log-list">
+        <div class="empty-state">✨ No entries yet — start scanning</div>
       </div>
     </div>
-
   </div>
 </div>
-
-<div class="toast" id="toast"></div>
+<div id="toastMsg" class="toast-modern"></div>
 
 <script>
-  let html5QrCode = null;
-  let scanning = false;
-  let currentCode = '';
+  // ---------- CORE DATA ----------
+  let inventory = [];         // each entry: { id, code, bin, quantity, timestamp }
+  let html5QrScanner = null;
+  let isScanning = false;
+  let currentCode = "";
 
-  // Clock & date
-  function updateClock() {
-    const now = new Date();
-    document.getElementById('clock').textContent =
-      now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    document.getElementById('date-display').textContent =
-      now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-  }
-  updateClock();
-  setInterval(updateClock, 1000);
+  // DOM elements
+  const scannerDiv = document.getElementById('qr-reader');
+  const scanBtn = document.getElementById('scannerToggleBtn');
+  const scanFrameDiv = document.getElementById('scanFrame');
+  const scanLineDiv = document.getElementById('scanLineAnim');
+  const codeDisplaySpan = document.getElementById('codeValueDisplay');
+  const manualInput = document.getElementById('manualCodeInput');
+  const binInput = document.getElementById('binField');
+  const qtyInput = document.getElementById('qtyField');
+  const codeBadge = document.getElementById('codeDisplayArea');
 
-  // Tab switch
-  function switchTab(tab, btn) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + tab).classList.add('active');
-    btn.classList.add('active');
-    if (tab === 'log') renderLog();
-    if (tab === 'scan' && scanning) stopScanner();
-  }
+  // helpers
+  const showToast = (msg, isError = false) => {
+    const toast = document.getElementById('toastMsg');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    if (isError) toast.style.background = "#d4876edd";
+    else toast.style.background = "#1e1b18dd";
+    setTimeout(() => toast.classList.remove('show'), 2200);
+    setTimeout(() => { toast.style.background = "#1e1b18dd"; }, 2500);
+  };
 
-  // Scanner
-  function toggleScanner() {
-    scanning ? stopScanner() : startScanner();
-  }
-
-  function startScanner() {
-    const btn = document.getElementById('scanToggleBtn');
-    const readerEl = document.getElementById('qr-reader');
-    const frame = document.getElementById('scannerFrame');
-    const line = document.getElementById('scanLine');
-
-    readerEl.style.display = 'block';
-    readerEl.style.marginBottom = '14px';
-    frame.classList.add('active');
-    line.classList.add('active');
-    btn.className = 'scan-btn scanning';
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Stop Scanner`;
-    scanning = true;
-
-    html5QrCode = new Html5Qrcode("qr-reader");
-    html5QrCode.start(
-      { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 200, height: 200 }, aspectRatio: 1.2 },
-      onScanSuccess,
-      () => {}
-    ).catch(() => {
-      showToast('Camera unavailable', 'error');
-      stopScanner();
-    });
-  }
-
-  function stopScanner() {
-    if (html5QrCode && scanning) {
-      html5QrCode.stop().then(() => { html5QrCode.clear(); html5QrCode = null; }).catch(() => {});
-    }
-    scanning = false;
-    const btn = document.getElementById('scanToggleBtn');
-    btn.className = 'scan-btn';
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Activate Scanner`;
-    document.getElementById('qr-reader').style.display = 'none';
-    document.getElementById('scannerFrame').classList.remove('active');
-    document.getElementById('scanLine').classList.remove('active');
-  }
-
-  function onScanSuccess(decodedText) {
-    stopScanner();
-    setCode(decodedText);
-    showToast('Scanned successfully', 'success');
-    setTimeout(() => document.getElementById('binInput').focus(), 200);
-  }
-
-  function setCode(val) {
-    currentCode = val;
-    const display = document.getElementById('codeDisplay');
-    display.classList.add('has-code');
-    display.innerHTML = `<span class="status-dot"></span><span class="code-value">${escHtml(val)}</span>`;
-    const inp = document.getElementById('itemCodeInput');
-    inp.value = val;
-    inp.classList.add('filled');
-  }
-
-  function syncCode(val) {
-    currentCode = val;
-    const display = document.getElementById('codeDisplay');
-    if (val) {
-      display.classList.add('has-code');
-      display.innerHTML = `<span class="status-dot"></span><span class="code-value">${escHtml(val)}</span>`;
+  function updateCodeUI() {
+    if (currentCode) {
+      codeDisplaySpan.textContent = currentCode;
+      codeBadge.classList.add('has-code');
+      manualInput.value = currentCode;
+      manualInput.classList.add('filled');
     } else {
-      display.classList.remove('has-code');
-      display.innerHTML = `<span class="code-placeholder">Awaiting scan or manual entry…</span>`;
+      codeDisplaySpan.textContent = '—';
+      codeBadge.classList.remove('has-code');
+      manualInput.value = '';
+      manualInput.classList.remove('filled');
     }
+  }
+
+  function syncCodeFromManual() {
+    currentCode = manualInput.value.trim();
+    updateCodeUI();
+  }
+  manualInput.addEventListener('input', syncCodeFromManual);
+
+  // local storage
+  function persistData() { localStorage.setItem('vaultory_data_v2', JSON.stringify(inventory)); }
+  function loadData() {
+    const stored = localStorage.getItem('vaultory_data_v2');
+    if (stored) {
+      try { inventory = JSON.parse(stored); } catch(e){ inventory = []; }
+    } else inventory = [];
+  }
+
+  // stats & rendering log (row wise)
+  function renderLog() {
+    const container = document.getElementById('logListContainer');
+    if (!inventory.length) {
+      container.innerHTML = `<div class="empty-state">📦 No items logged. Scan something to begin.</div>`;
+      updateStats();
+      return;
+    }
+    // show newest first
+    const sorted = [...inventory].reverse();
+    container.innerHTML = sorted.map(entry => {
+      const date = new Date(entry.timestamp);
+      const timeStr = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const dateStr = date.toLocaleDateString([], {month:'short', day:'numeric'});
+      return `
+        <div class="log-row" data-id="${entry.id}">
+          <div class="row-info">
+            <div class="row-code">
+              <span>🔗 ${escapeHtml(entry.code)}</span>
+              <span class="row-badge">📍 ${escapeHtml(entry.bin || 'No bin')}</span>
+            </div>
+            <div class="row-time">${dateStr} · ${timeStr}</div>
+          </div>
+          <div class="row-qty">${entry.quantity}</div>
+          <div class="row-actions">
+            <button class="delete-row" data-id="${entry.id}" title="Delete entry">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+    // attach delete events
+    document.querySelectorAll('.delete-row').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        deleteEntryById(id);
+      });
+    });
+    updateStats();
+  }
+
+  function deleteEntryById(id) {
+    const index = inventory.findIndex(e => e.id == id);
+    if (index !== -1) {
+      inventory.splice(index, 1);
+      persistData();
+      renderLog();
+      showToast("Entry removed", false);
+    }
+  }
+
+  function updateStats() {
+    const totalEntries = inventory.length;
+    const uniqueItems = new Set(inventory.map(i => i.code)).size;
+    const totalQty = inventory.reduce((sum, i) => sum + (i.quantity || 0), 0);
+    document.getElementById('statEntries').innerText = totalEntries;
+    document.getElementById('statItems').innerText = uniqueItems;
+    document.getElementById('statTotalQty').innerText = totalQty;
+  }
+
+  function clearAllLog() {
+    if (inventory.length && confirm("⚠️ Permanently delete all inventory entries?")) {
+      inventory = [];
+      persistData();
+      renderLog();
+      showToast("All entries cleared", false);
+    }
+  }
+
+  // EXPORT CSV
+  function exportToCSV() {
+    if (!inventory.length) {
+      showToast("No data to export", true);
+      return;
+    }
+    const headers = ["Product Code", "Bin Location", "Quantity", "Timestamp"];
+    const rows = inventory.map(item => [
+      item.code,
+      item.bin || "Unassigned",
+      item.quantity,
+      new Date(item.timestamp).toLocaleString()
+    ]);
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.href = url;
+    link.setAttribute("download", "vaultory_inventory.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast("CSV exported ✓", false);
   }
 
   function saveEntry() {
-    const code = (currentCode || document.getElementById('itemCodeInput').value).trim();
-    const bin  = document.getElementById('binInput').value.trim();
-    const qtyV = document.getElementById('qtyInput').value.trim();
-
-    if (!code)  { showToast('Item code is required', 'error'); return; }
-    if (!bin)   { showToast('Bin location is required', 'error'); return; }
-    if (qtyV === '' || isNaN(Number(qtyV))) { showToast('Valid quantity required', 'error'); return; }
-
-    const entry = { id: Date.now(), code, bin, qty: Number(qtyV), time: new Date().toISOString() };
-    const log = getLog();
-    log.unshift(entry);
-    saveLog(log);
-    showToast('Entry saved', 'success');
-    resetForm();
-  }
-
-  function resetForm() {
-    currentCode = '';
-    ['itemCodeInput','binInput','qtyInput'].forEach(id => {
-      const el = document.getElementById(id);
-      el.value = '';
-      el.classList.remove('filled');
-    });
-    const d = document.getElementById('codeDisplay');
-    d.classList.remove('has-code');
-    d.innerHTML = `<span class="code-placeholder">Awaiting scan or manual entry…</span>`;
-  }
-
-  // Storage
-  function getLog()      { try { return JSON.parse(localStorage.getItem('vaultory_log') || '[]'); } catch { return []; } }
-  function saveLog(log)  { localStorage.setItem('vaultory_log', JSON.stringify(log)); }
-
-  // Render log
-  function renderLog() {
-    const log = getLog();
-    const container = document.getElementById('logContainer');
-    const unique = new Set(log.map(e => e.code)).size;
-    const totalQty = log.reduce((s, e) => s + e.qty, 0);
-
-    document.getElementById('stat-entries').textContent = log.length;
-    document.getElementById('stat-items').textContent   = unique;
-    document.getElementById('stat-qty').textContent     = totalQty;
-    document.getElementById('logCount').textContent     = log.length + ' record' + (log.length !== 1 ? 's' : '');
-
-    if (!log.length) {
-      container.innerHTML = `<div class="log-empty"><span class="log-empty-icon">∅</span><p>No entries recorded yet.<br>Begin scanning to build your log.</p></div>`;
+    if (!currentCode) {
+      showToast("Please provide a product code (scan or type)", true);
       return;
     }
-
-    container.innerHTML = log.map((e, i) => {
-      const d = new Date(e.time);
-      const dateStr = d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      return `<div class="log-entry" style="animation-delay:${i * 0.04}s">
-        <div class="entry-main">
-          <span class="entry-code" title="${escHtml(e.code)}">${escHtml(e.code)}</span>
-          <div class="entry-meta">
-            <span class="entry-bin">${escHtml(e.bin)}</span>
-            <span class="entry-time">${dateStr} · ${timeStr}</span>
-          </div>
-        </div>
-        <div class="entry-right">
-          <span class="entry-qty">${e.qty}</span>
-          <span class="entry-qty-lbl">qty</span>
-          <button class="del-row" onclick="deleteEntry(${e.id})" title="Delete">✕</button>
-        </div>
-      </div>`;
-    }).join('');
+    const bin = binInput.value.trim() || "Unassigned";
+    let qty = parseInt(qtyInput.value, 10);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    const newEntry = {
+      id: Date.now() + Math.random(),
+      code: currentCode,
+      bin: bin,
+      quantity: qty,
+      timestamp: new Date().toISOString()
+    };
+    inventory.push(newEntry);
+    persistData();
+    renderLog();
+    showToast(`✓ Added ${currentCode} (x${qty})`, false);
+    // reset but keep code if user wants to scan similar? Better clear after save? optional.
+    currentCode = "";
+    updateCodeUI();
+    binInput.value = "";
+    qtyInput.value = "1";
+    binInput.classList.remove("filled");
+    qtyInput.classList.remove("filled");
+    if (isScanning) toggleScanner();  // stop scanner after save for better ux
   }
 
-  function deleteEntry(id) {
-    saveLog(getLog().filter(e => e.id !== id));
+  // SCANNER LOGIC
+  async function toggleScanner() {
+    if (!html5QrScanner) {
+      try { html5QrScanner = new Html5Qrcode("qr-reader"); } 
+      catch(e) { showToast("Scanner error", true); return; }
+    }
+    if (isScanning) {
+      await html5QrScanner.stop().catch(e=>console.warn);
+      scannerDiv.style.display = 'none';
+      isScanning = false;
+      scanBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg> Activate Scanner`;
+      scanBtn.classList.remove('scanning');
+      scanFrameDiv.classList.remove('active');
+      scanLineDiv.classList.remove('active');
+      return;
+    }
+    try {
+      scannerDiv.style.display = 'block';
+      await html5QrScanner.start({ facingMode: "environment" }, { fps: 12, qrbox: { width: 240, height: 240 } }, (decoded) => {
+        if (isScanning) {
+          currentCode = decoded;
+          updateCodeUI();
+          showToast(`✅ Scanned: ${decoded}`, false);
+          toggleScanner(); // auto stop after scan
+        }
+      }, (err) => {});
+      isScanning = true;
+      scanBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 18L18 6M6 6l12 12"/></svg> Stop Scanner`;
+      scanBtn.classList.add('scanning');
+      scanFrameDiv.classList.add('active');
+      scanLineDiv.classList.add('active');
+    } catch(e) {
+      showToast("Camera permission needed", true);
+      scannerDiv.style.display = 'none';
+      isScanning = false;
+    }
+  }
+
+  // tab switching
+  function switchToScan() {
+    document.getElementById('scanPage').classList.add('active');
+    document.getElementById('logPage').classList.remove('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tabScanBtn').classList.add('active');
+    if (isScanning) toggleScanner();
+  }
+  function switchToLog() {
+    document.getElementById('logPage').classList.add('active');
+    document.getElementById('scanPage').classList.remove('active');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById('tabLogBtn').classList.add('active');
+    if (isScanning) toggleScanner();
     renderLog();
   }
 
-  function clearLog() {
-    if (!confirm('Clear all log entries? This cannot be undone.')) return;
-    saveLog([]);
-    renderLog();
-    showToast('Log cleared');
+  // clock
+  function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    document.getElementById('date-display').innerText = now.toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}).toUpperCase();
   }
 
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  // event binding
+  document.getElementById('saveEntryBtn').addEventListener('click', saveEntry);
+  document.getElementById('scannerToggleBtn').addEventListener('click', toggleScanner);
+  document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
+  document.getElementById('clearLogBtn').addEventListener('click', clearAllLog);
+  document.getElementById('tabScanBtn').addEventListener('click', switchToScan);
+  document.getElementById('tabLogBtn').addEventListener('click', switchToLog);
 
-  function showToast(msg, type = '') {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast' + (type ? ' ' + type : '');
-    void t.offsetWidth;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2400);
-  }
+  function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+
+  // initial load
+  loadData();
+  renderLog();
+  updateClock();
+  setInterval(updateClock, 1000);
+  manualInput.addEventListener('input', () => { currentCode = manualInput.value.trim(); updateCodeUI(); });
+  window.addEventListener('load', () => { if (manualInput.value) syncCodeFromManual(); });
 </script>
 </body>
 </html>
